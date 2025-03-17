@@ -1,0 +1,5 @@
+com.reopenai.kalista.core.KalistaCoreAutoConfiguration
+com.reopenai.kalista.core.bench.BenchMarkerAspectConfiguration
+com.reopenai.kalista.core.i18n.I18nConfiguration
+com.reopenai.kalista.core.serialization.jackson.JacksonConfiguration
+com.reopenai.kalista.core.spring.SpringExtConfiguration
