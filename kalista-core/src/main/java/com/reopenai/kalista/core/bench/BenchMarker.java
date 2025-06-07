@@ -1,5 +1,6 @@
 package com.reopenai.kalista.core.bench;
 
+import com.alibaba.ttl.TransmittableThreadLocal;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.context.ContextView;
@@ -15,6 +16,8 @@ import java.util.function.Supplier;
  * Created by Allen Huang
  */
 public class BenchMarker {
+
+    private static final ThreadLocal<BenchMarker> CURRENT_MARKER = TransmittableThreadLocal.withInitial(BenchMarker::new);
 
     private static final Map<Method, String> METHOD_FLAG_MAP = new HashMap<>();
 
@@ -52,6 +55,14 @@ public class BenchMarker {
             result = builder.append(" total=").append(currentTime - startTime).append("ms").toString();
         }
         return result;
+    }
+
+    public static BenchMarker current() {
+        return CURRENT_MARKER.get();
+    }
+
+    public static void remove() {
+        CURRENT_MARKER.remove();
     }
 
     public static String parseMethodFlag(Method method) {

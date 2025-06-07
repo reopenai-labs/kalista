@@ -4,7 +4,6 @@ import cn.hutool.core.util.IdUtil;
 import com.reopenai.kalista.base.constants.EmptyConstants;
 import com.reopenai.kalista.base.constants.SystemConstants;
 import com.reopenai.kalista.core.bench.BenchMarker;
-import com.reopenai.kalista.core.bench.BenchMarkers;
 import com.reopenai.kalista.core.lang.exception.SystemException;
 import com.reopenai.kalista.grpc.common.GrpcMethodDetail;
 import com.reopenai.kalista.grpc.common.metadata.GrpcContextKey;
@@ -35,7 +34,7 @@ public class BlockingGrpcServerInvoker implements ServerCalls.UnaryMethod<byte[]
 
     @Override
     public void invoke(byte[] bytes, StreamObserver<byte[]> streamObserver) {
-        BenchMarker benchMarker = BenchMarkers.current();
+        BenchMarker benchMarker = BenchMarker.current();
         benchMarker.mark("inter");
         String requestId = Optional.ofNullable(GrpcContextKey.REQUEST_ID.getContextKey().get())
                 .orElseGet(IdUtil::nanoId);

@@ -1,7 +1,6 @@
 package com.reopenai.kalista.grpc.client.invoker;
 
 import com.reopenai.kalista.core.bench.BenchMarker;
-import com.reopenai.kalista.core.bench.BenchMarkers;
 import com.reopenai.kalista.grpc.client.handler.GrpcClientExceptionHandler;
 import com.reopenai.kalista.grpc.common.GrpcMethodDetail;
 import com.reopenai.kalista.grpc.serialization.RpcSerialization;
@@ -26,7 +25,7 @@ public class BlockingGrpcClientInvoker extends BaseGrpcClientInvoker {
 
     @Override
     public Object invoke(Object[] arguments) {
-        BenchMarker benchMarker = BenchMarkers.current();
+        BenchMarker benchMarker = BenchMarker.current();
         try {
             benchMarker.mark(this.methodDetail.getBenchFlag());
             byte[] buff = serializerArguments(arguments);

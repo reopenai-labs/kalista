@@ -1,6 +1,6 @@
 package com.reopenai.kalista.grpc.client.invoker;
 
-import com.reopenai.kalista.core.bench.BenchMarkers;
+import com.reopenai.kalista.core.bench.BenchMarker;
 import com.reopenai.kalista.grpc.client.handler.GrpcClientExceptionHandler;
 import com.reopenai.kalista.grpc.common.GrpcMethodDetail;
 import com.reopenai.kalista.grpc.common.metadata.GrpcContextKey;
@@ -39,7 +39,7 @@ public class MonoGrpcClientInvoker extends BaseGrpcClientInvoker {
                             });
                         })
                         .onErrorMap(throwable -> grpcClientExceptionHandler.handle(this.methodDetail, throwable))
-                        .transformDeferredContextual((mono, cv) -> BenchMarkers.markWithContext(mono, cv, methodDetail.getBenchFlag()))
+                        .transformDeferredContextual((mono, cv) -> BenchMarker.markWithContext(mono, cv, methodDetail.getBenchFlag()))
                         .flatMap(this::deserialize)
         );
     }

@@ -35,11 +35,13 @@
         <!-- maven -->
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
+        <maven-os-plugin.version>1.7.1</maven-os-plugin.version>
         <maven-exec-maven-plugin>3.0.0</maven-exec-maven-plugin>
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
         <flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
         <maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
         <maven-version-plugin.version>2.15.0</maven-version-plugin.version>
+        <maven-protobuf-plugin.version>0.6.1</maven-protobuf-plugin.version>
         <maven-enforcer-plugin.version>3.4.0</maven-enforcer-plugin.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -50,13 +52,6 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.reopenai.infra</groupId>
-            <artifactId>ornn</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
-            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -191,8 +186,8 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
-                        <source>21</source>
-                        <target>21</target>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
                         <encoding>UTF-8</encoding>
                         <compilerArgs>
                             <arg>-parameters</arg>
@@ -216,6 +211,12 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin.version}</version>
+                    <configuration>
+                        <charset>UTF-8</charset>
+                        <encoding>UTF-8</encoding>
+                        <docencoding>UTF-8</docencoding>
+                        <source>${java.version}</source>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
@@ -223,6 +224,10 @@
                     <version>${maven-version-plugin.version}</version>
                     <configuration>
                         <generateBackupPoms>false</generateBackupPoms>
+                        <processParent>true</processParent>
+                        <processPlugins>true</processPlugins>
+                        <processDependencies>true</processDependencies>
+                        <processDependencyManagement>true</processDependencyManagement>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -277,7 +282,7 @@
                                         <message>
                                             <![CDATA[项目必须使用JDK21构建JDK. 当前JDK版本: ${java.version}.]]>
                                         </message>
-                                        <version>21</version>
+                                        <version>${java.version}</version>
                                     </requireJavaVersion>
                                     <!-- 没有循环依赖 -->
                                     <banCircularDependencies/>
@@ -343,6 +348,86 @@
                 <artifactId>versions-maven-plugin</artifactId>
             </plugin>
         </plugins>
+        <!-- extension -->
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${maven-os-plugin.version}</version>
+            </extension>
+        </extensions>
+        <!-- resources -->
+        <resources>
+            <resource>
+                <directory>src/main/proto</directory>
+                <includes>
+                    <include>**/*.proto</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>*</include>
+                </includes>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
     </build>
+
+    <profiles>
+        <profile>
+            <id>macOS</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns-native-macos</artifactId>
+                    <classifier>${os.detected.classifier}</classifier>
+                    <version>4.1.121.Final</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>grpc-java</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.xolstice.maven.plugins</groupId>
+                        <artifactId>protobuf-maven-plugin</artifactId>
+                        <version>${maven-protobuf-plugin.version}</version>
+                        <configuration>
+                            <pluginId>grpc-java</pluginId>
+                            <protoSourceRoot>${project.basedir}/src/main/proto</protoSourceRoot>
+                            <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
+                            <clearOutputDirectory>false</clearOutputDirectory>
+                            <temporaryProtoFileDirectory>
+                                ${project.build.directory}/generated-sources/protobuf/java
+                            </temporaryProtoFileDirectory>
+                            <protocArtifact>
+                                com.google.protobuf:protoc:3.25.5:exe:${os.detected.classifier}
+                            </protocArtifact>
+                            <pluginArtifact>
+                                io.grpc:protoc-gen-grpc-java:1.73.0:exe:${os.detected.classifier}
+                            </pluginArtifact>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>compile</goal>
+                                    <goal>compile-custom</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
