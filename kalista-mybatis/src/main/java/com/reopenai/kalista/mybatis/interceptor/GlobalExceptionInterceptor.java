@@ -1,7 +1,7 @@
 package com.reopenai.kalista.mybatis.interceptor;
 
 import com.reopenai.kalista.base.ErrorCode;
-import com.reopenai.kalista.core.lang.exception.BusinessException;
+import com.reopenai.kalista.core.lang.exception.SystemException;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.plugin.Interceptor;
@@ -25,7 +25,7 @@ public class GlobalExceptionInterceptor implements Interceptor {
         try {
             return invocation.proceed();
         } catch (Throwable e) {
-            throw new BusinessException(e, ErrorCode.Builtin.DB_UNKNOWN_ERROR);
+            throw new SystemException(e, ErrorCode.Builtin.DB_UNKNOWN_ERROR);
         }
     }
 

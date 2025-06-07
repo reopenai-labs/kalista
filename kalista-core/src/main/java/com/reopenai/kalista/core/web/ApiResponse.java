@@ -54,7 +54,7 @@ public class ApiResponse<T> {
 
     public static <T> Mono<ApiResponse<T>> failureWithMono(ErrorCode code, Object... args) {
         return Mono.deferContextual(ctx -> {
-            Locale locale = ctx.getOrDefault(Locale.class, Locale.SIMPLIFIED_CHINESE);
+            Locale locale = ctx.getOrDefault(Locale.class, Locale.getDefault());
             ApiResponse<T> result = new ApiResponse<>();
             result.setCode(code.getValue());
             result.setMessage(I18nUtil.parseLocaleMessage(locale, code, args));

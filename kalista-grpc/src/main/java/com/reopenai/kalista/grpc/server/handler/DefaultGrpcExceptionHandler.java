@@ -2,6 +2,7 @@ package com.reopenai.kalista.grpc.server.handler;
 
 import com.reopenai.kalista.base.ErrorCode;
 import com.reopenai.kalista.core.lang.exception.BusinessException;
+import com.reopenai.kalista.core.lang.exception.SystemException;
 import com.reopenai.kalista.grpc.common.metadata.GrpcMetaDataKey;
 import io.grpc.Metadata;
 import io.grpc.Status;
@@ -18,9 +19,12 @@ public class DefaultGrpcExceptionHandler implements GrpcExceptionHandler, Ordere
 
     @Override
     public StatusException handleException(Throwable exception) {
-        Status status = Status.UNKNOWN;
+        Status status = Status.INTERNAL;
         Metadata trailers = new Metadata();
-        if (exception instanceof BusinessException err) {
+        if (exception instanceof SystemException err) {
+            if (exception instanceof BusinessException) {
+                status = Status.FAILED_PRECONDITION;
+            }
             trailers.put(GrpcMetaDataKey.ERROR_CODE, err.getErrorCode().getValue());
             trailers.put(GrpcMetaDataKey.ERROR_MSG, err.getMessage());
             Object[] args = err.getArgs();

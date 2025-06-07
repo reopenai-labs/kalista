@@ -1,6 +1,6 @@
 package com.reopenai.kalista.grpc.client.handler;
 
-import com.reopenai.kalista.grpc.common.GrpcException;
+import com.reopenai.kalista.core.lang.exception.SystemException;
 import com.reopenai.kalista.grpc.common.GrpcMethodDetail;
 
 /**
@@ -8,6 +8,6 @@ import com.reopenai.kalista.grpc.common.GrpcMethodDetail;
  */
 public interface GrpcClientExceptionHandler {
 
-    GrpcException handle(GrpcMethodDetail methodDetail, Throwable cause);
+    SystemException handle(GrpcMethodDetail methodDetail, Throwable cause);
 
 }

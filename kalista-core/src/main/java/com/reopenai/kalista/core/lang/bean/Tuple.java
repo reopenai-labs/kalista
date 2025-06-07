@@ -1,6 +1,6 @@
 package com.reopenai.kalista.core.lang.bean;
 
-import com.reopenai.kalista.core.lang.lambda.XFunction;
+import com.reopenai.kalista.base.structure.lambda.XFunction;
 
 import java.util.function.Function;
 

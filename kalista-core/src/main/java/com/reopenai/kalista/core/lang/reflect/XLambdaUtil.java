@@ -1,8 +1,11 @@
-package com.reopenai.kalista.core.lang.lambda;
+package com.reopenai.kalista.core.lang.reflect;
 
 import cn.hutool.core.util.ClassLoaderUtil;
 import cn.hutool.core.util.StrUtil;
-import com.reopenai.kalista.core.lang.reflect.XReflectUtil;
+import com.reopenai.kalista.base.structure.lambda.MethodReference;
+import com.reopenai.kalista.base.structure.lambda.XConsumer;
+import com.reopenai.kalista.base.structure.lambda.XFunction;
+import com.reopenai.kalista.base.structure.lambda.XSupplier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.ClassUtils;
 

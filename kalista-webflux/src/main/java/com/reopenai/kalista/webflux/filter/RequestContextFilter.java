@@ -1,15 +1,16 @@
 package com.reopenai.kalista.webflux.filter;
 
 import cn.hutool.core.util.IdUtil;
+import com.reopenai.kalista.base.constants.SystemConstants;
 import com.reopenai.kalista.core.bench.BenchMakerIgnore;
 import com.reopenai.kalista.core.bench.BenchMarker;
-import com.reopenai.kalista.base.constants.SystemConstants;
-import com.reopenai.kalista.core.web.RequestHeaders;
+import com.reopenai.kalista.core.web.HttpConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.context.i18n.LocaleContext;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
@@ -31,7 +32,6 @@ import java.util.Optional;
 @BenchMakerIgnore
 public class RequestContextFilter implements WebFilter {
 
-
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
@@ -47,7 +47,8 @@ public class RequestContextFilter implements WebFilter {
                 .doOnSubscribe(s -> benchMarker.mark("enter"))
                 .doFinally(signalType -> {
                     benchMarker.mark("outer");
-                    log.info("httpRequest: [method={}]#[path={}]#[queryParams={}] {}", method, path, queryParams, benchMarker.getResult());
+                    HttpStatusCode statusCode = exchange.getResponse().getStatusCode();
+                    log.info("httpRequest: [method={}]#[path={}]#[queryParams={}]#[status={}] {}", method, path, queryParams, statusCode, benchMarker.getResult());
                 })
                 .contextWrite(ctx -> ctx
                         .put(Locale.class, locale)
@@ -59,7 +60,7 @@ public class RequestContextFilter implements WebFilter {
     }
 
     private String resolveRequestId(HttpHeaders headers) {
-        String requestId = Optional.ofNullable(headers.getFirst(RequestHeaders.X_REQUEST_ID))
+        String requestId = Optional.ofNullable(headers.getFirst(HttpConstants.HEADER_KEY_REQUEST_ID))
                 .orElseGet(IdUtil::nanoId);
         MDC.put(SystemConstants.REQUEST_ID, requestId);
         return requestId;
@@ -68,7 +69,7 @@ public class RequestContextFilter implements WebFilter {
     private Locale resolveLocale(ServerWebExchange exchange) {
         Locale locale = Optional.of(exchange.getLocaleContext())
                 .map(LocaleContext::getLocale)
-                .orElse(Locale.SIMPLIFIED_CHINESE);
+                .orElse(Locale.getDefault());
         LocaleContextHolder.setLocale(locale);
         return locale;
     }

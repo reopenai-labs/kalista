@@ -1,7 +1,7 @@
 package com.reopenai.kalista.mybatis.interceptor;
 
 import com.reopenai.kalista.base.ErrorCode;
-import com.reopenai.kalista.core.lang.exception.BusinessException;
+import com.reopenai.kalista.core.lang.exception.SystemException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -27,7 +27,7 @@ public class TransactionCheckerInterceptor implements Interceptor {
         MappedStatement ms = (MappedStatement) args[0];
         if (SqlCommandType.SELECT != ms.getSqlCommandType() && !TransactionSynchronizationManager.isSynchronizationActive()) {
             log.error("[MyBatis]写操作必须包含事物.当前操作被拒绝.method={}", ms.getId());
-            throw new BusinessException(ErrorCode.Builtin.SERVER_ERROR);
+            throw new SystemException(ErrorCode.Builtin.SERVER_ERROR);
         }
         return invocation.proceed();
     }

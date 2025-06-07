@@ -66,9 +66,13 @@ public interface ErrorCode {
          */
         MISSING_REQUEST_PARAMETER("4002"),
         /**
-         * 解析Token失败
+         * 请求Token验证失败
          */
-        PARSE_TOKEN_ERROR("4003"),
+        INVALID_ACCESS_TOKEN("4003"),
+        /**
+         * 请求签名验证失败
+         */
+        INVALID_ACCESS_SIGNATURE("4004"),
         /**
          * 非法的参数值
          */

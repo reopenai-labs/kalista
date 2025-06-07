@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.reopenai.kalista.base.enums.Language;
 import com.reopenai.kalista.core.cache.local.CacheConfig;
 import com.reopenai.kalista.core.cache.local.LocalCache;
-import com.reopenai.kalista.core.lang.lambda.XFunction;
+import com.reopenai.kalista.base.structure.lambda.XFunction;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.lang.Nullable;

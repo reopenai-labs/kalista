@@ -1,7 +1,7 @@
 package com.reopenai.kalista.core.cache.local;
 
 import com.reopenai.kalista.core.lang.bean.Tuple;
-import com.reopenai.kalista.core.lang.lambda.XConsumer;
+import com.reopenai.kalista.base.structure.lambda.XConsumer;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;

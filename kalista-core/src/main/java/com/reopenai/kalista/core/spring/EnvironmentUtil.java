@@ -2,7 +2,7 @@ package com.reopenai.kalista.core.spring;
 
 import com.reopenai.kalista.core.cache.local.CacheConfig;
 import com.reopenai.kalista.core.cache.local.LocalCache;
-import com.reopenai.kalista.core.lang.lambda.XFunction;
+import com.reopenai.kalista.base.structure.lambda.XFunction;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 

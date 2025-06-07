@@ -4,7 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Scheduler;
 import com.reopenai.kalista.core.lang.bean.Tuple;
-import com.reopenai.kalista.core.lang.lambda.XFunction;
+import com.reopenai.kalista.base.structure.lambda.XFunction;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;

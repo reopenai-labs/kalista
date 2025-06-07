@@ -1,7 +1,7 @@
 package com.reopenai.kalista.r2dbc.condition;
 
-import com.reopenai.kalista.core.lang.lambda.XFunction;
-import com.reopenai.kalista.core.lang.lambda.XLambdaUtil;
+import com.reopenai.kalista.base.structure.lambda.XFunction;
+import com.reopenai.kalista.core.lang.reflect.XLambdaUtil;
 import org.springframework.data.relational.core.query.Criteria;
 
 import java.util.Collection;

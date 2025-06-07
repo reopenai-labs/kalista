@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.reopenai.kalista.core.lang.lambda.MethodReference;
-import com.reopenai.kalista.core.lang.lambda.XLambdaUtil;
+import com.reopenai.kalista.base.structure.lambda.MethodReference;
+import com.reopenai.kalista.core.lang.reflect.XLambdaUtil;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 

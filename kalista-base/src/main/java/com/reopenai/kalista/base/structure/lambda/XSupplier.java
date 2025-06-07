@@ -1,4 +1,4 @@
-package com.reopenai.kalista.core.lang.lambda;
+package com.reopenai.kalista.base.structure.lambda;
 
 import java.io.Serializable;
 import java.util.function.Supplier;

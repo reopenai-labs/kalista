@@ -1,7 +1,7 @@
 package com.reopenai.kalista.lock.redisson;
 
 import com.reopenai.kalista.base.ErrorCode;
-import com.reopenai.kalista.core.lang.exception.BusinessException;
+import com.reopenai.kalista.core.lang.exception.SystemException;
 import com.reopenai.kalista.lock.api.DistributedLockFactory;
 import com.reopenai.kalista.lock.api.DistributedLocker;
 import lombok.RequiredArgsConstructor;
@@ -119,7 +119,7 @@ public class RedissonDistributedLockFactory implements DistributedLockFactory {
             lockInstance.unlock();
         }
         log.error("[Redisson]未获取到锁.lock name:{}, timeout:{}ms, leaseTime:{}ms", key, timeout, leaseTime);
-        throw new BusinessException(ErrorCode.Builtin.DISTRIBUTED_LOCK_ACQUIRE_LOCK_TIMEOUT);
+        throw new SystemException(ErrorCode.Builtin.DISTRIBUTED_LOCK_ACQUIRE_LOCK_TIMEOUT);
     }
 
 }
