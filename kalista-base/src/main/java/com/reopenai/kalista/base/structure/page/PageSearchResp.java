@@ -20,7 +20,7 @@ public class PageSearchResp<E> implements Serializable {
     private Long total;
 
     @Schema(description = "分页查询的结果", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Collection<E> result;
+    private Collection<E> records;
 
     @Schema(description = "扩展字段.如果存在OrderData字段，在查询下一页时需要将此字段带入extra中.")
     private Map<String, Object> extra;
@@ -67,7 +67,7 @@ public class PageSearchResp<E> implements Serializable {
      */
     public <R> PageSearchResp<R> create(Collection<R> result) {
         PageSearchResp<R> searchResult = new PageSearchResp<>();
-        searchResult.setResult(result);
+        searchResult.setRecords(result);
         searchResult.setTotal(this.getTotal());
         searchResult.setExtra(new HashMap<>(2));
         return searchResult;
@@ -82,7 +82,7 @@ public class PageSearchResp<E> implements Serializable {
      */
     public static <T, R> PageSearchResp<R> transform(PageSearchResp<T> pageResult, Collection<R> result) {
         PageSearchResp<R> searchResult = new PageSearchResp<>();
-        searchResult.setResult(result);
+        searchResult.setRecords(result);
         searchResult.setTotal(pageResult.getTotal());
         searchResult.setExtra(pageResult.getExtra());
         return searchResult;
@@ -98,7 +98,7 @@ public class PageSearchResp<E> implements Serializable {
     public static <T> PageSearchResp<T> create(Collection<T> data, Long total) {
         PageSearchResp<T> result = new PageSearchResp<>();
         result.setTotal(total);
-        result.setResult(data);
+        result.setRecords(data);
         result.setExtra(new HashMap<>(2));
         return result;
     }
@@ -123,7 +123,7 @@ public class PageSearchResp<E> implements Serializable {
     public static <T> PageSearchResp<T> emptyOfArray() {
         PageSearchResp<T> result = new PageSearchResp<>();
         result.setTotal(0L);
-        result.setResult(Collections.emptyList());
+        result.setRecords(Collections.emptyList());
         return result;
     }
 

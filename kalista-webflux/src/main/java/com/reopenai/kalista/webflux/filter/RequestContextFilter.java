@@ -1,10 +1,12 @@
 package com.reopenai.kalista.webflux.filter;
 
 import cn.hutool.core.util.IdUtil;
+import com.reopenai.infra.monitor.metric.StandardMetrics;
 import com.reopenai.kalista.base.constants.SystemConstants;
 import com.reopenai.kalista.core.bench.BenchMakerIgnore;
 import com.reopenai.kalista.core.bench.BenchMarker;
 import com.reopenai.kalista.core.web.HttpConstants;
+import io.micrometer.core.instrument.Metrics;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.context.i18n.LocaleContext;
@@ -49,6 +51,9 @@ public class RequestContextFilter implements WebFilter {
                     benchMarker.mark("outer");
                     HttpStatusCode statusCode = exchange.getResponse().getStatusCode();
                     log.info("httpRequest: [method={}]#[path={}]#[queryParams={}]#[status={}] {}", method, path, queryParams, statusCode, benchMarker.getResult());
+                    if (statusCode != null && statusCode.is5xxServerError()) {
+                        Metrics.counter(StandardMetrics.HTTP_REQUESTS_ERROR, "uri", path, "status", String.valueOf(statusCode.value())).increment();
+                    }
                 })
                 .contextWrite(ctx -> ctx
                         .put(Locale.class, locale)

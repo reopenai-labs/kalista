@@ -9,13 +9,14 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>kalista-core</module>
-        <module>kalista-webflux</module>
-        <module>kalista-grpc</module>
-        <module>kalista-r2dbc</module>
         <module>kalista-base</module>
+        <module>kalista-core</module>
+        <module>kalista-grpc</module>
         <module>kalista-lock</module>
+        <module>kalista-monitor</module>
         <module>kalista-mybatis</module>
+        <module>kalista-r2dbc</module>
+        <module>kalista-webflux</module>
     </modules>
 
     <properties>
@@ -157,6 +158,16 @@
             <dependency>
                 <groupId>com.reopenai.infras</groupId>
                 <artifactId>kalista-lock</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.reopenai.infras</groupId>
+                <artifactId>kalista-monitor</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.reopenai.infras</groupId>
+                <artifactId>kalista-mybatis</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

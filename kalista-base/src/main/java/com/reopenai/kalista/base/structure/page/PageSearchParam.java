@@ -118,7 +118,7 @@ public class PageSearchParam<T> implements Serializable {
      * @param request 分页查询请求参数
      * @return 分页查询参数实例
      */
-    public static <P extends PageSearchRequest, T> PageSearchParam<T> from(P request, Function<P, T> func) {
+    public static <P extends BasePagingRequest, T> PageSearchParam<T> from(P request, Function<P, T> func) {
         PageSearchParam<T> param = new PageSearchParam<>();
         param.setCount(request.isCount());
         param.setPageNum(request.getPageNum());

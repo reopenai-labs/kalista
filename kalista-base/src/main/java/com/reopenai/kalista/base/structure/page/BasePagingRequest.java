@@ -2,12 +2,10 @@ package com.reopenai.kalista.base.structure.page;
 
 import io.protostuff.Tag;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.Constraint;
-import jakarta.validation.ConstraintValidator;
-import jakarta.validation.ConstraintValidatorContext;
-import jakarta.validation.Payload;
+import jakarta.validation.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -24,8 +22,8 @@ import java.util.Set;
  * @author Allen Huang
  */
 @Data
-@PageSearchRequest.PageSearchChecker
-public class PageSearchRequest implements Serializable {
+@BasePagingRequest.PageSearchChecker
+public class BasePagingRequest implements Serializable {
 
     @Tag(1)
     @Min(value = 1, message = "pageNum cannot be less than 1")
@@ -58,19 +56,21 @@ public class PageSearchRequest implements Serializable {
     private boolean count;
 
     @Tag(4)
+    @Valid
     @Size(max = 10, message = "orders cannot be more than 10")
     @Schema(description = "分页查询的生序排序字段, 最大不能超过10个排序字段")
-    private Set<String> ascFields;
+    private Set<@Pattern(regexp = "^[a-zA-Z0-9]{1,32}$") String> ascFields;
 
     @Tag(5)
+    @Valid
     @Size(max = 10, message = "orders cannot be more than 10")
     @Schema(description = "分页查询的降序排序字段, 最大不能超过10个排序字段")
-    private Set<String> descFields;
+    private Set<@Pattern(regexp = "^[a-zA-Z0-9]{1,32}$") String> descFields;
 
     /**
      * 复制一份分页查询参数
      */
-    public static <T extends PageSearchRequest, R extends PageSearchRequest> void copy(T source, R target) {
+    public static <T extends BasePagingRequest, R extends BasePagingRequest> void copy(T source, R target) {
         target.setCount(source.isCount());
         target.setAscFields(source.getAscFields());
         target.setDescFields(source.getDescFields());
@@ -102,10 +102,10 @@ public class PageSearchRequest implements Serializable {
         Class<? extends Payload>[] payload() default {};
 
 
-        final class PageSearchCheckerValidator implements ConstraintValidator<PageSearchChecker, PageSearchRequest> {
+        final class PageSearchCheckerValidator implements ConstraintValidator<PageSearchChecker, BasePagingRequest> {
 
             @Override
-            public boolean isValid(PageSearchRequest value, ConstraintValidatorContext context) {
+            public boolean isValid(BasePagingRequest value, ConstraintValidatorContext context) {
                 int pageSize = value.getPageSize();
                 int pageNum = value.getPageNum();
                 int offset = (pageNum - 1) * pageSize;

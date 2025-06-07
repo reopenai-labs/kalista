@@ -6,6 +6,8 @@ import com.reopenai.kalista.lock.annotation.DistributedLock;
 import com.reopenai.kalista.lock.api.DistributedLockFactory;
 import com.reopenai.kalista.lock.api.DistributedLocker;
 import com.reopenai.kalista.lock.api.LockType;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -35,6 +37,7 @@ public class DistributedLockAdvice implements MethodInterceptor {
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
+        Timer.Sample sample = Timer.start(Metrics.globalRegistry);
         Object[] args = invocation.getArguments();
         Method method = invocation.getMethod();
         DistributedLock locker = method.getAnnotation(DistributedLock.class);
@@ -60,6 +63,9 @@ public class DistributedLockAdvice implements MethodInterceptor {
             if (log.isDebugEnabled()) {
                 log.debug("[DistributedLock]已成功释放分布式锁.锁名称{},释放后持有锁数量:{}", lockInstance.getName(), lockInstance.getHoldCount());
             }
+            Timer timer = Metrics.timer("distributed.lock.requests.time-consuming", "name", name);
+            sample.stop(timer);
+            Metrics.counter("distributed.lock.requests", "name", name).increment();
         }
     }
 
