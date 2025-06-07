@@ -9,6 +9,7 @@ import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import org.reactivestreams.Subscription;
+import org.springframework.grpc.server.exception.GrpcExceptionHandler;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
@@ -28,13 +29,14 @@ public class ReactorGrpcServerInvoker implements ServerCalls.UnaryMethod<byte[],
 
     private final RpcSerialization serialization;
 
+    private final GrpcExceptionHandler exceptionHandler;
 
     @Override
     public void invoke(byte[] bytes, StreamObserver<byte[]> streamObserver) {
         Map<Object, Object> context = buildContext();
         BenchMarker marker = new BenchMarker();
         context.put(BenchMarker.class, marker);
-        StreamObserverAdapter adapter = new StreamObserverAdapter(streamObserver, marker, methodDetail);
+        StreamObserverAdapter adapter = new StreamObserverAdapter(streamObserver, marker, methodDetail, exceptionHandler);
         invokeWithArguments(bytes)
                 .map(serialization::serializer)
                 .doOnError(adapter::onError)
@@ -64,6 +66,8 @@ public class ReactorGrpcServerInvoker implements ServerCalls.UnaryMethod<byte[],
 
         private final GrpcMethodDetail methodDetail;
 
+        private final GrpcExceptionHandler exceptionHandler;
+
         private boolean published;
 
         @Override
@@ -74,7 +78,11 @@ public class ReactorGrpcServerInvoker implements ServerCalls.UnaryMethod<byte[],
 
         @Override
         public void onError(Throwable throwable) {
-            delegate.onError(throwable);
+            Throwable cause = throwable.getCause();
+            if (cause == null) {
+                cause = throwable;
+            }
+            delegate.onError(exceptionHandler.handleException(cause));
         }
 
         @Override

@@ -44,7 +44,7 @@ public class DefaultGrpcExceptionHandler implements GrpcExceptionHandler, Ordere
 
     @Override
     public int getOrder() {
-        return Integer.MAX_VALUE;
+        return Integer.MIN_VALUE;
     }
 
 }

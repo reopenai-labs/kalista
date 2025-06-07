@@ -5,6 +5,7 @@ import com.reopenai.kalista.base.constants.EmptyConstants;
 import com.reopenai.kalista.base.constants.SystemConstants;
 import com.reopenai.kalista.core.bench.BenchMarker;
 import com.reopenai.kalista.core.bench.BenchMarkers;
+import com.reopenai.kalista.core.lang.exception.SystemException;
 import com.reopenai.kalista.grpc.common.GrpcMethodDetail;
 import com.reopenai.kalista.grpc.common.metadata.GrpcContextKey;
 import com.reopenai.kalista.grpc.serialization.RpcSerialization;
@@ -12,8 +13,10 @@ import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
+import org.springframework.grpc.server.exception.GrpcExceptionHandler;
 
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.Optional;
 
 /**
@@ -28,6 +31,8 @@ public class BlockingGrpcServerInvoker implements ServerCalls.UnaryMethod<byte[]
 
     private final RpcSerialization serialization;
 
+    private final GrpcExceptionHandler exceptionHandler;
+
     @Override
     public void invoke(byte[] bytes, StreamObserver<byte[]> streamObserver) {
         BenchMarker benchMarker = BenchMarkers.current();
@@ -35,6 +40,10 @@ public class BlockingGrpcServerInvoker implements ServerCalls.UnaryMethod<byte[]
         String requestId = Optional.ofNullable(GrpcContextKey.REQUEST_ID.getContextKey().get())
                 .orElseGet(IdUtil::nanoId);
         MDC.put(SystemConstants.REQUEST_ID, requestId);
+        StringBuilder builder = new StringBuilder();
+        builder.append("gRPC Request: [endpoint=").append(methodDetail.getEndpoint())
+                .append("]#[referrer=").append(GrpcContextKey.REFERRER_SERVICE.getContextKey().get())
+                .append("]#[requestId=").append(requestId).append(']');
         try {
             Object[] arguments;
             Parameter parameter = methodDetail.getParameter();
@@ -51,17 +60,20 @@ public class BlockingGrpcServerInvoker implements ServerCalls.UnaryMethod<byte[]
             streamObserver.onNext(serializer);
             streamObserver.onCompleted();
         } catch (Throwable e) {
-            streamObserver.onError(e);
+            Throwable cause = e.getCause();
+            if (cause == null) {
+                cause = e;
+            }
+            if (cause instanceof SystemException err) {
+                builder.append("#[errorCode=").append(err.getErrorCode().getValue())
+                        .append("]#[errorParams=").append(Arrays.toString(err.getArgs())).append("]");
+            }
+            builder.append("#[errMsg=").append(cause.getMessage()).append("]");
+            methodDetail.getLogger().error("{}", builder, cause);
+            streamObserver.onError(exceptionHandler.handleException(cause));
         } finally {
             benchMarker.mark("outer");
-            String referrer = GrpcContextKey.REFERRER_SERVICE.getContextKey().get();
-            StringBuilder builder = new StringBuilder();
-            builder.append("gRPC Request: [endpoint=").append(methodDetail.getEndpoint());
-            if (referrer != null) {
-                builder.append("]#[referrer=").append(referrer);
-            }
-            builder.append("]#[requestId=").append(requestId).append(']')
-                    .append(benchMarker.getResult());
+            builder.append(benchMarker.getResult());
             methodDetail.getLogger().info(builder.toString());
         }
     }

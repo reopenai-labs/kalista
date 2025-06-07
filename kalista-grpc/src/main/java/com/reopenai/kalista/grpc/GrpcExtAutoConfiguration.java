@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.grpc.autoconfigure.server.GrpcServerFactoryAutoConfiguration;
+import org.springframework.grpc.autoconfigure.server.exception.GrpcExceptionHandlerAutoConfiguration;
 import org.springframework.grpc.client.GrpcChannelBuilderCustomizer;
 import org.springframework.grpc.server.ServerBuilderCustomizer;
 import org.springframework.grpc.server.exception.GrpcExceptionHandler;
@@ -93,13 +94,16 @@ public class GrpcExtAutoConfiguration {
     }
 
     @Configuration
-    @AutoConfigureBefore(GrpcServerFactoryAutoConfiguration.class)
+    @AutoConfigureBefore({
+            GrpcServerFactoryAutoConfiguration.class,
+            GrpcExceptionHandlerAutoConfiguration.class,
+    })
     @ConditionalOnProperty(value = "spring.grpc.server.enabled", havingValue = "true", matchIfMissing = true)
     public static class GrpcServerExtConfiguration {
 
         @Bean
-        public GrpcServerInvokeFactory grpcServerInvokeFactory(List<RpcSerialization> serializations) {
-            return new DefaultGrpcServerInvokeFactory(serializations);
+        public GrpcServerInvokeFactory grpcServerInvokeFactory(List<RpcSerialization> serializations, GrpcExceptionHandler exceptionHandler) {
+            return new DefaultGrpcServerInvokeFactory(serializations, exceptionHandler);
         }
 
         @Bean
