@@ -8,6 +8,7 @@ import com.reopenai.kalista.core.lang.exception.BusinessException;
 import com.reopenai.kalista.core.lang.exception.SystemException;
 import com.reopenai.kalista.core.web.ApiResponse;
 import com.reopenai.kalista.core.web.WebRequestException;
+import com.reopenai.kalista.webflux.utils.HttpRequestUtil;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.ValidationException;
@@ -193,7 +194,10 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<Void> exceptionHandler(ServerWebExchange exchange, Exception e) {
         Locale locale = exchange.getLocaleContext().getLocale();
-        log.error("caught unhandled exception.", e);
+        String logPrefix = exchange.getLogPrefix();
+        StringBuilder builder = HttpRequestUtil.buildRequestLog(exchange.getRequest());
+        builder.append("#[logPrefix=").append(logPrefix).append("] ");
+        log.error("{}", builder, e);
         return ApiResponse.failure(locale, ErrorCode.Builtin.SERVER_ERROR);
     }
 

@@ -21,6 +21,7 @@ import reactor.core.publisher.MonoSink;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
@@ -121,6 +122,19 @@ public final class HttpRequestUtil {
         }
         return handler.apply(bodyPayload)
                 .then(chain.filter(exchange));
+    }
+
+    public static StringBuilder buildRequestLog(ServerHttpRequest request) {
+        URI uri = request.getURI();
+        StringBuilder builder = new StringBuilder();
+        builder.append("httpRequest: [method=").append(request.getMethod().name());
+        builder.append("]#[host=").append(uri.getHost());
+        builder.append("]#[path=").append(uri.getPath());
+        String rawQuery = uri.getRawQuery();
+        if (rawQuery != null) {
+            builder.append("]#[queryParams=").append(rawQuery);
+        }
+        return builder.append(']');
     }
 
 }

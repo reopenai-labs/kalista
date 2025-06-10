@@ -6,7 +6,9 @@ import com.reopenai.kalista.core.lang.exception.SystemException;
 import com.reopenai.kalista.core.serialization.jackson.JsonUtil;
 import com.reopenai.kalista.core.web.ApiResponse;
 import com.reopenai.kalista.core.web.WebRequestException;
+import com.reopenai.kalista.webflux.utils.HttpRequestUtil;
 import jakarta.validation.ValidationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +30,7 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 /**
  * Created by Allen Huang
  */
+@Slf4j
 public class GlobalWebErrorHandler implements WebExceptionHandler, Ordered {
 
     @Override
@@ -37,7 +40,12 @@ public class GlobalWebErrorHandler implements WebExceptionHandler, Ordered {
             case WebRequestException err -> writeWith(exchange, err.getHttpStatus(), err.getErrorCode(), err.getArgs());
             case BusinessException err -> writeWith(exchange, BAD_REQUEST, err.getErrorCode(), err.getArgs());
             case SystemException err -> writeWith(exchange, INTERNAL_SERVER_ERROR, err.getErrorCode(), err.getArgs());
-            default -> Mono.error(ex);
+            default -> {
+                String logPrefix = exchange.getLogPrefix();
+                StringBuilder builder = HttpRequestUtil.buildRequestLog(exchange.getRequest());
+                log.error("{} - {}", logPrefix, builder, ex);
+                yield writeWith(exchange, INTERNAL_SERVER_ERROR, ErrorCode.Builtin.SERVER_ERROR);
+            }
         };
     }
 
