@@ -4,15 +4,12 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ReflectUtil;
 import com.reopenai.kalista.core.serialization.jackson.JsonUtil;
-import org.springframework.asm.ClassVisitor;
-import org.springframework.asm.Type;
-import org.springframework.cglib.core.*;
+import org.springframework.cglib.beans.BeanCopier;
+import org.springframework.cglib.core.Converter;
+import org.springframework.cglib.core.DebuggingClassWriter;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.Modifier;
-import java.security.ProtectionDomain;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,6 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Allen Huang
  */
 public final class XBeanUtil {
+
+    private static final String GET = "get";
+    private static final String SET = "set";
+    private static final String IS = "is";
 
     static {
         System.setProperty(DebuggingClassWriter.DEBUG_LOCATION_PROPERTY, "target");
@@ -36,17 +37,16 @@ public final class XBeanUtil {
      * └── key
      * └── CustomBeanCopier
      */
-    private static final Map<Class<?>, Map<Class<?>, Map<Boolean, Map<String, CustomBeanCopier>>>> BEAN_COPIER_MAP = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Map<Class<?>, BeanCopier>> BEAN_COPIER_MAP = new ConcurrentHashMap<>();
 
     /**
      * 将源对象中的属性复制给目标对象。能够被成功复制的属性的类型和名称必须一致。
      *
-     * @param source       源对象
-     * @param target       目标对象
-     * @param ignoreFields 需要忽略的字段名
+     * @param source 源对象
+     * @param target 目标对象
      */
-    public static void copyProperties(Object source, Object target, String... ignoreFields) {
-        copyProperties(source, target, null, ignoreFields);
+    public static void copyProperties(Object source, Object target) {
+        copyProperties(source, target, null);
     }
 
     /**
@@ -56,40 +56,24 @@ public final class XBeanUtil {
      * @param target    目标对象
      * @param converter 转换器实例
      */
-    public static void copyProperties(Object source, Object target, Converter converter, String... ignoreFields) {
+    public static void copyProperties(Object source, Object target, Converter converter) {
         Class<?> sourceClass = source.getClass();
         Class<?> targetClass = target.getClass();
-        //获取所有需要被忽略的字段
-        Set<String> ignores = ignoreFields.length == 0 ? Collections.emptySet() : new TreeSet<>(Set.of(ignoreFields));
-        getBeanCopier(sourceClass, targetClass, converter, ignores)
+        getBeanCopier(sourceClass, targetClass, converter)
                 .copy(source, target, converter);
     }
 
-    public static CustomBeanCopier getBeanCopier(Class<?> sourceClass, Class<?> targetClass, Converter converter, Set<String> ignores) {
-        //计算出需要忽略的字段
-        StringJoiner joiner = new StringJoiner("&");
-        for (String ignore : ignores) {
-            joiner.add(ignore);
-        }
-        String key = joiner.toString();
+    public static BeanCopier getBeanCopier(Class<?> sourceClass, Class<?> targetClass, Converter converter) {
         boolean hasConverter = converter != null;
 
         // 根据sourceClass获取第一层
-        Map<Class<?>, Map<Boolean, Map<String, CustomBeanCopier>>> sourceMap = BEAN_COPIER_MAP
+        Map<Class<?>, BeanCopier> sourceMap = BEAN_COPIER_MAP
                 .computeIfAbsent(sourceClass, k -> new ConcurrentHashMap<>(16));
-
-        // 根据targetClass获取第二层
-        Map<Boolean, Map<String, CustomBeanCopier>> targetMap = sourceMap
-                .computeIfAbsent(targetClass, k -> buildTargetMap());
-
-        // 根据hasConverter获取第三层
-        Map<String, CustomBeanCopier> instantMap = targetMap.get(Boolean.valueOf(hasConverter)); // 优化拆箱带来的性能损失
-
-        return instantMap.computeIfAbsent(key, k -> CustomBeanCopier.create(sourceClass, targetClass, hasConverter, ignores));
+        return sourceMap.computeIfAbsent(targetClass, k -> BeanCopier.create(sourceClass, targetClass, hasConverter));
     }
 
-    private static Map<Boolean, Map<String, CustomBeanCopier>> buildTargetMap() {
-        Map<Boolean, Map<String, CustomBeanCopier>> map = new HashMap<>();
+    private static Map<Boolean, Map<String, BeanCopier>> buildTargetMap() {
+        Map<Boolean, Map<String, BeanCopier>> map = new HashMap<>();
         map.put(Boolean.FALSE, new ConcurrentHashMap<>(4));
         map.put(Boolean.TRUE, new ConcurrentHashMap<>(0));
         return map;
@@ -182,176 +166,24 @@ public final class XBeanUtil {
         });
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static abstract class CustomBeanCopier {
-        private static final BeanCopierKey KEY_FACTORY =
-                (BeanCopierKey) KeyFactory.create(BeanCopierKey.class);
-        private static final Type CONVERTER =
-                TypeUtils.parseType("org.springframework.cglib.core.Converter");
-        private static final Type BEAN_COPIER =
-                TypeUtils.parseType(CustomBeanCopier.class.getName());
-        private static final Signature COPY =
-                new Signature("copy", Type.VOID_TYPE, new Type[]{Constants.TYPE_OBJECT, Constants.TYPE_OBJECT, CONVERTER});
-        private static final Signature CONVERT =
-                TypeUtils.parseSignature("Object convert(Object, Class, Object)");
-
-        interface BeanCopierKey {
-            Object newInstance(String source, String target, boolean useConverter);
+    /**
+     * 将getter、setter名称转换成属性名称
+     *
+     * @param name getter/setter名称
+     * @return 属性名称
+     */
+    public static String methodToProperty(String name) {
+        if (name.startsWith(IS)) {
+            name = name.substring(2);
+        } else if (name.startsWith(GET) || name.startsWith(SET)) {
+            name = name.substring(3);
+        } else {
+            return null;
         }
-
-        public static CustomBeanCopier create(Class source, Class target, boolean useConverter, Set<String> ignoreFields) {
-            Generator gen = new Generator();
-            gen.setSource(source);
-            gen.setTarget(target);
-            gen.setUseConverter(useConverter);
-            gen.setIgnoreFields(ignoreFields);
-            return gen.create();
+        if (name.length() == 1 || (name.length() > 1 && !Character.isUpperCase(name.charAt(1)))) {
+            name = name.substring(0, 1).toLowerCase(Locale.ENGLISH) + name.substring(1);
         }
-
-        abstract public void copy(Object from, Object to, Converter converter);
-
-        public static class Generator extends AbstractClassGenerator {
-            private static final Source SOURCE = new Source(CustomBeanCopier.class.getName());
-            private Class source;
-            private Class target;
-            private boolean useConverter;
-
-            private Set<String> ignoreFields;
-
-            public Generator() {
-                super(SOURCE);
-            }
-
-            public void setSource(Class source) {
-                if (!Modifier.isPublic(source.getModifiers())) {
-                    setNamePrefix(source.getName());
-                }
-                this.source = source;
-            }
-
-            public void setTarget(Class target) {
-                if (!Modifier.isPublic(target.getModifiers())) {
-                    setNamePrefix(target.getName());
-                }
-                this.target = target;
-                // SPRING PATCH BEGIN
-                setContextClass(target);
-                // SPRING PATCH END
-            }
-
-            public void setIgnoreFields(Set<String> ignoreFields) {
-                this.ignoreFields = ignoreFields;
-            }
-
-            public void setUseConverter(boolean useConverter) {
-                this.useConverter = useConverter;
-            }
-
-            protected ClassLoader getDefaultClassLoader() {
-                return source.getClassLoader();
-            }
-
-            protected ProtectionDomain getProtectionDomain() {
-                return ReflectUtils.getProtectionDomain(source);
-            }
-
-            public CustomBeanCopier create() {
-                Object key = KEY_FACTORY.newInstance(source.getName(), target.getName(), useConverter);
-                return (CustomBeanCopier) super.create(key);
-            }
-
-            public void generateClass(ClassVisitor v) {
-                Type sourceType = Type.getType(source);
-                Type targetType = Type.getType(target);
-                ClassEmitter ce = new ClassEmitter(v);
-                ce.begin_class(Constants.V1_8,
-                        Constants.ACC_PUBLIC,
-                        getClassName(),
-                        BEAN_COPIER,
-                        null,
-                        Constants.SOURCE_FILE);
-
-                EmitUtils.null_constructor(ce);
-                CodeEmitter e = ce.begin_method(Constants.ACC_PUBLIC, COPY, null);
-                PropertyDescriptor[] getters = ReflectUtils.getBeanGetters(source);
-                PropertyDescriptor[] setters = ReflectUtils.getBeanSetters(target);
-
-                Map names = new HashMap();
-                for (PropertyDescriptor propertyDescriptor : getters) {
-                    names.put(propertyDescriptor.getName(), propertyDescriptor);
-                }
-                Local targetLocal = e.make_local();
-                Local sourceLocal = e.make_local();
-                if (useConverter) {
-                    e.load_arg(1);
-                    e.checkcast(targetType);
-                    e.store_local(targetLocal);
-                    e.load_arg(0);
-                    e.checkcast(sourceType);
-                    e.store_local(sourceLocal);
-                } else {
-                    e.load_arg(1);
-                    e.checkcast(targetType);
-                    e.load_arg(0);
-                    e.checkcast(sourceType);
-                }
-                for (PropertyDescriptor setter : setters) {
-                    // 过滤掉忽略的字段
-                    if (ignoreFields.contains(setter.getName())) {
-                        continue;
-                    }
-                    PropertyDescriptor getter = (PropertyDescriptor) names.get(setter.getName());
-                    if (getter != null) {
-                        MethodInfo read = ReflectUtils.getMethodInfo(getter.getReadMethod());
-                        MethodInfo write = ReflectUtils.getMethodInfo(setter.getWriteMethod());
-                        if (parseSetterType(setter).equals(parseGetterType(getter))) {
-                            if (useConverter) {
-                                Type setterType = write.getSignature().getArgumentTypes()[0];
-                                e.load_local(targetLocal);
-                                e.load_arg(2);
-                                e.load_local(sourceLocal);
-                                e.invoke(read);
-                                e.box(read.getSignature().getReturnType());
-                                EmitUtils.load_class(e, setterType);
-                                e.push(write.getSignature().getName());
-                                e.invoke_interface(CONVERTER, CONVERT);
-                                e.unbox_or_zero(setterType);
-                                e.invoke(write);
-                            } else if (compatible(getter, setter)) {
-                                e.dup2();
-                                e.invoke(read);
-                                e.invoke(write);
-                            }
-                        }
-                    }
-                }
-                e.return_value();
-                e.end_method();
-                ce.end_class();
-            }
-
-            private java.lang.reflect.Type parseSetterType(PropertyDescriptor setter) {
-                return setter.getWriteMethod().getParameters()[0].getParameterizedType();
-            }
-
-            private java.lang.reflect.Type parseGetterType(PropertyDescriptor getter) {
-                return getter.getReadMethod().getGenericReturnType();
-            }
-
-            private static boolean compatible(PropertyDescriptor getter, PropertyDescriptor setter) {
-                // TODO: allow automatic widening conversions?
-                return setter.getPropertyType().isAssignableFrom(getter.getPropertyType());
-            }
-
-            protected Object firstInstance(Class type) {
-                return ReflectUtils.newInstance(type);
-            }
-
-            protected Object nextInstance(Object instance) {
-                return instance;
-            }
-        }
+        return name;
     }
-
 
 }

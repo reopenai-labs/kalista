@@ -15,31 +15,6 @@ import java.util.Locale;
 @Slf4j
 public final class XReflectUtil {
 
-    private static final String GET = "get";
-    private static final String SET = "set";
-    private static final String IS = "is";
-
-    /**
-     * 将getter、setter名称转换成属性名称
-     *
-     * @param name getter/setter名称
-     * @return 属性名称
-     */
-    public static String methodToProperty(String name) {
-        if (name.startsWith(IS)) {
-            name = name.substring(2);
-        } else if (name.startsWith(GET) || name.startsWith(SET)) {
-            name = name.substring(3);
-        } else {
-            log.warn("{} is not a getter/setter method.", name);
-            return null;
-        }
-        if (name.length() == 1 || (name.length() > 1 && !Character.isUpperCase(name.charAt(1)))) {
-            name = name.substring(0, 1).toLowerCase(Locale.ENGLISH) + name.substring(1);
-        }
-        return name;
-    }
-
     /**
      * 获取某个对象的Class。如果这个对象是代理对象，则会获取这个对象真正的Class
      *
@@ -48,6 +23,15 @@ public final class XReflectUtil {
      */
     public static Class<?> getClass(Object bean) {
         return AopUtils.isAopProxy(bean) ? AopUtils.getTargetClass(bean) : bean.getClass();
+    }
+
+    public static boolean hasClass(String className) {
+        try {
+            Class.forName(className);
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
 }

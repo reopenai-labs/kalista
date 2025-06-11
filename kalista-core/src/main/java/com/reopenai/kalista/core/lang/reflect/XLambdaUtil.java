@@ -162,7 +162,7 @@ public final class XLambdaUtil {
 
     private static String parseMethodName(Serializable serializable) {
         SerializedLambda lambda = resolve(serializable);
-        return XReflectUtil.methodToProperty(lambda.getImplMethodName());
+        return XBeanUtil.methodToProperty(lambda.getImplMethodName());
     }
 
 

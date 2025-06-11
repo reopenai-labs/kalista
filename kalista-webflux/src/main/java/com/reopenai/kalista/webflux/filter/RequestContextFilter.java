@@ -6,6 +6,7 @@ import com.reopenai.kalista.base.constants.SystemConstants;
 import com.reopenai.kalista.core.bench.BenchMakerIgnore;
 import com.reopenai.kalista.core.bench.BenchMarker;
 import com.reopenai.kalista.core.web.HttpConstants;
+import com.reopenai.kalista.webflux.utils.HttpRequestUtil;
 import io.micrometer.core.instrument.Metrics;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -14,16 +15,14 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -37,9 +36,7 @@ public class RequestContextFilter implements WebFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        String method = request.getMethod().name();
         String path = request.getPath().toString();
-        String queryParams = getQueryParams(request);
         BenchMarker benchMarker = new BenchMarker();
         HttpHeaders headers = request.getHeaders();
 
@@ -49,8 +46,9 @@ public class RequestContextFilter implements WebFilter {
                 .doOnSubscribe(s -> benchMarker.mark("enter"))
                 .doFinally(signalType -> {
                     benchMarker.mark("outer");
-                    HttpStatusCode statusCode = exchange.getResponse().getStatusCode();
-                    log.info("httpRequest: [method={}]#[path={}]#[queryParams={}]#[status={}] {}", method, path, queryParams, statusCode, benchMarker.getResult());
+                    ServerHttpResponse response = exchange.getResponse();
+                    printAccessLog(exchange, benchMarker);
+                    HttpStatusCode statusCode = response.getStatusCode();
                     if (statusCode != null && statusCode.is5xxServerError()) {
                         Metrics.counter(StandardMetrics.HTTP_REQUESTS_ERROR, "uri", path, "status", String.valueOf(statusCode.value())).increment();
                     }
@@ -62,6 +60,15 @@ public class RequestContextFilter implements WebFilter {
                         .put(SystemConstants.REQUEST_ID, requestId)
                 )
                 .contextCapture();
+    }
+
+    private void printAccessLog(ServerWebExchange exchange, BenchMarker benchMarker) {
+        ServerHttpRequest request = exchange.getRequest();
+        StringBuilder builder = HttpRequestUtil.buildRequestLog(request);
+        HttpStatusCode statusCode = exchange.getResponse().getStatusCode();
+        builder.append("#[status=").append(statusCode).append("]");
+        builder.append(benchMarker.getResult());
+        log.info(builder.toString());
     }
 
     private String resolveRequestId(HttpHeaders headers) {
@@ -77,18 +84,6 @@ public class RequestContextFilter implements WebFilter {
                 .orElse(Locale.getDefault());
         LocaleContextHolder.setLocale(locale);
         return locale;
-    }
-
-    private String getQueryParams(ServerHttpRequest request) {
-        MultiValueMap<String, String> params = request.getQueryParams();
-        if (!params.isEmpty()) {
-            StringBuilder builder = new StringBuilder();
-            for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-                builder.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
-            }
-            return builder.toString();
-        }
-        return "NONE";
     }
 
 }
